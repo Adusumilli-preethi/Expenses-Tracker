@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Accountant Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: #eaf4fc;
+      font-family: 'Poppins', sans-serif;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      margin: 50px auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 900px;
+    }
+    h2 {
+      color: #003366;
+      font-weight: 700;
+    }
+    button.logout-btn {
+      background-color: #dc3545;
+      border: none;
+      color: white;
+      font-weight: 600;
+      float: right;
+      margin-top: -55px;
+      border-radius: 10px;
+      padding: 8px 18px;
+    }
+    button.logout-btn:hover {
+      background-color: #b02a37;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="logout-btn btn" onclick="logout()">Logout</button>
+    <h2>Accountant Dashboard</h2>
+    <p>Submit expenses and track fuel consumption here.</p>
+
+    <form id="expenseForm">
+      <div class="mb-3">
+        <label for="date" class="form-label">Date</label>
+        <input type="date" id="date" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label for="machineId" class="form-label">Machine ID</label>
+        <input type="text" id="machineId" class="form-control" placeholder="Enter machine ID" required />
+      </div>
+      <div class="mb-3">
+        <label for="fuel" class="form-label">Fuel Consumed (Liters)</label>
+        <input type="number" id="fuel" class="form-control" min="0" step="0.01" required />
+      </div>
+      <div class="mb-3">
+        <label for="cost" class="form-label">Expense Amount (₹)</label>
+        <input type="number" id="cost" class="form-control" min="0" step="0.01" required />
+      </div>
+      <div class="mb-3">
+        <label for="note" class="form-label">Note (optional)</label>
+        <textarea id="note" class="form-control" rows="2" placeholder="Describe the expense"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Submit Expense</button>
+    </form>
+
+    <hr />
+
+    <h4>Submitted Expenses</h4>
+    <table class="table table-striped" id="expenseTable">
+      <thead class="table-primary">
+        <tr>
+          <th>Date</th>
+          <th>Machine ID</th>
+          <th>Fuel (L)</th>
+          <th>Cost (₹)</th>
+          <th>Note</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('loggedInUser');
+      window.location.href = 'index.html';
+    }
+
+    function loadExpenses() {
+      const logs = JSON.parse(localStorage.getItem('fuelLogs') || '[]');
+      const tbody = document.querySelector('#expenseTable tbody');
+      tbody.innerHTML = '';
+      logs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${log.date}</td>
+          <td>${log.machineId}</td>
+          <td>${log.fuel}</td>
+          <td>₹${log.cost.toFixed(2)}</td>
+          <td>${log.note || ''}</td>
+          <td>${log.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('expenseForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const date = document.getElementById('date').value;
+      const machineId = document.getElementById('machineId').value.trim();
+      const fuel = parseFloat(document.getElementById('fuel').value);
+      const cost = parseFloat(document.getElementById('cost').value);
+      const note = document.getElementById('note').value.trim();
+
+      if (!date || !machineId || isNaN(fuel) || fuel < 0 || isNaN(cost) || cost < 0) {
+        alert('Please fill all required fields correctly.');
+        return;
+      }
+
+      const logs = JSON.parse(localStorage.getItem('fuelLogs') || '[]');
+
+      // Check if entry exists for that date and machine — to avoid duplicates or merge? For now, just add new.
+      // Determine status
+      const status = cost > 5000 ? 'Pending Manager Approval' : 'Approved';
+
+      logs.push({ date, machineId, fuel, cost, note, status });
+      localStorage.setItem('fuelLogs', JSON.stringify(logs));
+
+      alert(status === 'Pending Manager Approval' ? 'Expense submitted and pending manager approval.' : 'Expense recorded successfully.');
+      loadExpenses();
+      this.reset();
+    });
+
+    window.onload = () => {
+      const user = localStorage.getItem('loggedInUser');
+      if (user !== 'accountant') {
+        alert('Access denied. Please login as Accountant.');
+        window.location.href = 'index.html';
+      } else {
+        loadExpenses();
+      }
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

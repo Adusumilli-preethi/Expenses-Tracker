@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manager Dashboard - Approve Expenses</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: #eaf4fc;
+      font-family: 'Poppins', sans-serif;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      margin: 50px auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 1000px;
+    }
+    h2 {
+      color: #003366;
+      font-weight: 700;
+    }
+    button.logout-btn {
+      background-color: #dc3545;
+      border: none;
+      color: white;
+      font-weight: 600;
+      float: right;
+      margin-top: -55px;
+      border-radius: 10px;
+      padding: 8px 18px;
+    }
+    button.logout-btn:hover {
+      background-color: #b02a37;
+    }
+    button.approve-btn {
+      background-color: #198754;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      margin-right: 8px;
+    }
+    button.approve-btn:hover {
+      background-color: #146c43;
+    }
+    button.reject-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+    }
+    button.reject-btn:hover {
+      background-color: #b02a37;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="logout-btn btn" onclick="logout()">Logout</button>
+    <h2>Manager Dashboard - Approve Expenses</h2>
+    <p>Review and approve or reject expenses over ₹5000.</p>
+
+    <table class="table table-striped" id="pendingTable">
+      <thead class="table-primary">
+        <tr>
+          <th>Date</th>
+          <th>Machine ID</th>
+          <th>Fuel (L)</th>
+          <th>Cost (₹)</th>
+          <th>Note</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('loggedInUser');
+      window.location.href = 'index.html';
+    }
+
+    function loadPendingExpenses() {
+      const logs = JSON.parse(localStorage.getItem('fuelLogs') || '[]');
+      const tbody = document.querySelector('#pendingTable tbody');
+      tbody.innerHTML = '';
+
+      const pending = logs.filter(log => log.status === 'Pending Manager Approval');
+      if (pending.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No pending expenses for approval.</td></tr>';
+        return;
+      }
+
+      pending.forEach((log, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${log.date}</td>
+          <td>${log.machineId}</td>
+          <td>${log.fuel}</td>
+          <td>₹${log.cost.toFixed(2)}</td>
+          <td>${log.note || ''}</td>
+          <td>
+            <button class="approve-btn" onclick="approveExpense(${index})">Approve</button>
+            <button class="reject-btn" onclick="rejectExpense(${index})">Reject</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function approveExpense(index) {
+      const logs = JSON.parse(localStorage.getItem('fuelLogs') || '[]');
+      const pendingIndexes = logs
+        .map((log, i) => log.status === 'Pending Manager Approval' ? i : -1)
+        .filter(i => i !== -1);
+      const actualIndex = pendingIndexes[index];
+      if (actualIndex !== undefined) {
+        logs[actualIndex].status = 'Approved';
+        localStorage.setItem('fuelLogs', JSON.stringify(logs));
+        alert('Expense approved.');
+        loadPendingExpenses();
+      }
+    }
+
+    function rejectExpense(index) {
+      const logs = JSON.parse(localStorage.getItem('fuelLogs') || '[]');
+      const pendingIndexes = logs
+        .map((log, i) => log.status === 'Pending Manager Approval' ? i : -1)
+        .filter(i => i !== -1);
+      const actualIndex = pendingIndexes[index];
+      if (actualIndex !== undefined) {
+        logs[actualIndex].status = 'Rejected';
+        localStorage.setItem('fuelLogs', JSON.stringify(logs));
+        alert('Expense rejected.');
+        loadPendingExpenses();
+      }
+    }
+
+    window.onload = () => {
+      const user = localStorage.getItem('loggedInUser');
+      if (user !== 'manager') {
+        alert('Access denied. Please login as Manager.');
+        window.location.href = 'index.html';
+      } else {
+        loadPendingExpenses();
+      }
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
